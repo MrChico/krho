@@ -1,36 +1,78 @@
-//Experimenting with implementing rholang in K, to learn more about both frameworks
-//Learned so far;
+// Experimenting with implementing rholang in K, to learn more about both frameworks
+// Learned so far;
 //
-//Grammars defined in k cannot be mutually inductive, so we cannot
-//the higher order nature of rholang in the following way
-// Proc ::= ... | deref Name
-// Name ::= @Proc
-// there is probably a way around this though, building up more nuanced layers
-// of hierchical expressions
+// Actually, looks like syntax-sorts _can_ be mutually inductive.
 //
-// K can only have binder constructs be of arity 2. See comment
+// It appears that the current version of K cannot handle binding constructs with more than two args
+// therefore, instead of writing `"for (" Id "<-" Name ")" Proc`, as one might like, we first bind Id in Proc, and then make it into a proc waiting on input
 //
-// When it comes to interpreting the comms rule in the syntax we would like to utilize
-// some of the nice abstraction we have in K. Therefore, it probably makes sense to have
-// concurrent processes giving rise to Bags in the configuration. One needs to take into
-// account which variables are bound in which Bag though.
-// The current implementation does not go this route.
+// TODO: allow for multiple bindings in "new" and contract
+
 require "substitution.k"
+
+module RHOLANG-SYNTAX
+   imports SUBSTITUTION
+   syntax Name ::= Id
+   	      | Int
+	      | Bool
+	      | String
+	      | "@" Proc
+	      
+   syntax BoundProc ::= Id "in" Proc		[binder] //Id is bound in Proc
+   
+   syntax In ::= Name "?" BoundProc		//Listening on Name
+
+   syntax In ::= "for" "(" Id "<-" Name ")" Proc
+   //Syntactic sugar; will be rewritten, see below
+//   	     | "contract" Name "(" List{Id, ","} ")"
+   
+   syntax Out ::= Name "(" Name ")"      	   			//Output
+
+   syntax Proc ::= "0"
+   	       | In
+	       | Out
+	       | "{" Proc "}"			[bracket] //Fix this
+   syntax Procs ::= List{Proc, "|"}
+
+   syntax KVariable ::= Name | Id
+
+   //The "for" syntactic sugar
+   rule for (X:Id <- Y:Name) P:Proc => Y ? (X in P)
+
+   rule Y:Name ? (X:Id in P:Proc) | Y(Z:Name) => P[Z / X]
+endmodule
 
 module RHOLANG
    imports SUBSTITUTION
-   syntax Name ::= Id
-   syntax Proc ::=  "Nil"					//Base case
-   	      | "{" Proc "}"			     [bracket]  //
-      	      | "new" Id "in" Proc		     [binder]   //Binds name in the process
-	      //It appears that the current version of K cannot handle binding constructs with more than two args
-//therefore, instead of writing `"for (" Id "<-" Name ")" Proc`, as one might like, we do the following (hack)
-	      | Name "." Proc	      	    	      	  	//Listening on name
-	      | "for " Id "<-" Proc		     [binder]	//binds Id in name
- 	      | Name "(" Name ")"      	   			//Output
-  	      > Proc "|" Proc					//Parallel
-   syntax KVariable ::= Id
+   imports RHOLANG-SYNTAX
 
+   configuration <T>
+      <ins>
+	<in multiplicity="*"> . </in>
+      </ins>
+      <outs>
+        <out multiplicity="*"> . </out>
+      </outs>
+      <k> $PGM:Procs </k>
+   </T>
 
-  rule for X:Id <- Y:Name . P:Proc | Y:Name(Z:Name) => P[Z / X]
+   //Empty processes are simply removed
+   rule <k> 0:Proc | Ts:Procs => Ts </k>
+
+   //Processes that are waiting on input are placed in the <ins> box
+   rule <k> I:In | Ts:Procs => Ts </k>
+   	<ins> Ins => (Ins <in> I</in>) </ins>
+
+   //Processes that want to output are placed in the <outs> box
+   rule <k> O:Out | Ts:Procs => Ts </k>
+   	<outs> Outs => (<out> O </out> Outs) </outs>
+
+ 
+   //Comm rule:
+   rule <in> (Y:Name ? (X:Id in P:In)) => P[Z / X]  </in>
+   	<out> Y(Z:Name) => . </out>
+
+    rule <in> (Y:Name ? (X:Id in P:Out)) => P[Z / X]  </in>
+   	<out> Y(Z:Name) => P[Z / X] </out>
+
 endmodule
