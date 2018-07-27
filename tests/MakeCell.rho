@@ -1,0 +1,36 @@
+new MakeCell in {
+  // Makes a single cell in which you can store values
+  contract MakeCell(@init, get, set) = {
+    new valueStore in {
+      valueStore!(init) |
+      contract get(ack) = {
+        for(@value <- valueStore) {
+          valueStore!(value) | ack!(value)
+        }
+      } |
+      contract set(@newValue, ack) = {
+        for(_ <- valueStore) {
+          valueStore!(newValue) | ack!(true)
+        }
+      }
+    }
+  } |
+  // Cell usage.
+  new myGet, mySet in {
+    MakeCell!(123, *myGet, *mySet) |
+    new ack in {
+      myGet!(*ack) |
+      for (@result <- ack) {
+        //result now contains the value 123
+        mySet!(456, *ack) |
+        for (_ <- ack) {
+          myGet!(*ack) |
+          for (@result <- ack) {
+            //result now contains the value 456
+            Nil
+          }
+        }
+      }
+    }
+  }
+}
