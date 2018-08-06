@@ -8,11 +8,11 @@ deps-k:
 		&& mvn package
 
 build:
-	kompile rho.k --backend java
+	k/k-distribution/bin/kompile rho.k --backend java
 
 test: build
 	for x in $(test_files); do \
-		krun $$x ; \
+		k/k-distribution/bin/krun $$x ; \
 	done
 
 test_files = $(shell ls -d $(pwd)tests/*)

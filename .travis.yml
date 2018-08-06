@@ -2,5 +2,8 @@ os:
   - osx
 
 before_install:
-
+  - make deps-k
 install:
+  - make build
+script:
+  - make test
