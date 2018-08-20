@@ -1,20 +1,29 @@
-// My own interpretation of the semantics of rholang. Heavily inspired by Dereks work at https://github.com/rchain/rchain/tree/master/rholang/src/main/k/rholang
 require "rho-syntax.k"
+require "configuration.k"
+require "processes-semantics.k"
+require "sending-receiving.k"
+require "persistent-sending-receiving.k"
+require "match-process.k"
+require "matching-function.k"
+require "specific-matching-rules.k"
+require "matching-with-par.k"
+require "joins.k"
+require "free.k"
+require "program-restrictions.k"
 
 module RHO
 imports RHO-SYNTAX
+imports CONFIGURATION
+imports PROCESSES-SEMANTICS
+imports SENDING-RECEIVING
+imports PERSISTENT-SENDING-RECEIVING
+imports MATCH-PROCESS
+imports MATCHING-FUNCTION
+imports SPECIFIC-MATCHING-RULES
+imports MATCHING-WITH-PAR
+imports JOINS
+imports FREE
+imports PROGRAM-RESTRICTIONS
 
-// Configuration
-configuration
-        <T color="yellow">
-           <k color="red"> $PGM:Proc </k>
-           <Ins>
-              <In multiplicity="*" color="purple"> . </In>                  
-           </Ins>
-           <Outs>
-              <Out multiplicity="*" color="purple"> . </Out>
-           </Outs>   
-           <comm-count> 0 </comm-count>
-        </T>
 
 endmodule
