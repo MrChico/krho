@@ -19,11 +19,9 @@ syntax Proc ::=
               // The empty process
               | "Nil"
               // Listen
-              | "for" "(" NamePats "<-" Name ")" "{" Proc "}" [binder]
-              // Persistent listen
-              | "for" "(" NamePats "<=" Name ")" "{" Proc "}" [binder]
+              | "for" "(" Receipt ")" "{" Proc "}" [binder]
               // Contract **needs to be given an alias which binds**
-              | "contract" Name "(" NamePats ")" "=" "{" Proc "}"
+              | "contract" Name "(" Receipt ")" "=" "{" Proc "}"
               // Send
               | Name "!" Send
               // Persistent send
@@ -45,11 +43,6 @@ syntax Proc ::=
 
 // KResult for processes with "strict" arguments
 syntax KResult ::= Bool
-
-// Send
-syntax Send  ::=
-                "(" Proc ")"
-              | RhoTuple
 
 // Process variables
 syntax ProcVar ::=
@@ -84,6 +77,7 @@ syntax RhoTuple ::=
               // Single tuple
                 "(" Proc ",)"
               // Multiple tuple
+              | "(" Proc "," Proc ")"
               | "(" Proc "," Proc "," Procs ")"
 
 syntax RhoMap   ::= "{" RhoKeyValuePairs "}"
@@ -120,6 +114,35 @@ syntax Bool ::=
               | Proc "==" Proc
               | Proc "!=" Proc
 
+// Send
+syntax Send  ::=
+                "(" Proc ")"
+              | RhoTuple
+
+// Receipt
+syntax Receipt ::=
+                ReceiptLinear
+              | ReceiptRepeated
+
+// Linear receipts
+syntax ReceiptLinear ::=
+                LinearBinds
+
+syntax LinearBinds ::= List{LinearBind, ";"}
+syntax LinearBind  ::=
+                NamePats "<-" Name
+
+// Repeated receipts
+syntax ReceiptRepeated ::=
+                RepeatedBinds
+
+syntax RepeatedBinds ::= List{LinearBind, ";"}
+syntax RepeatedBind  ::=
+                NamePats "<=" Name
+
+// MatchCase
+syntax MatchCase  ::= ProcPat "=>" "{" Proc "}" [binder]
+syntax MatchCases ::= List{MatchCase, " "}
 
 // -------------
 //     Names
@@ -234,9 +257,6 @@ syntax KResult   ::= Bool | Int
 //    Some syntax for the "match" process
 // -------------
 
-// Syntax for the "match" process
-syntax MatchCase  ::= ProcPat "=>" "{" Proc "}" [binder]
-syntax MatchCases ::= List{MatchCase, " "}
 
 // The same but for patterns
 syntax MatchCasePat  ::= ProcPat "=>" "{" ProcPat "}" [binder]
