@@ -5,6 +5,9 @@ module INITIAL-CHECKS
 // 1. A check for free variables
 
 
+// 2. A check for wildcards outside of patterns 
+
+
 // 2. A check for unforgeable names
 
 

@@ -15,7 +15,7 @@ syntax Proc ::=
               // Expressions
               | Exp
               // Process variables
-              | ProcId
+              | ProcVar
               // The empty process
               | "Nil"
               // Listen
@@ -175,39 +175,10 @@ syntax Procs ::= List{ Proc, "," }
 //    Patterns
 // -------------
 
-// ---
 // Process Patterns
-// ---
-
 syntax ProcPat ::=
             // A process pattern can be a standard process
               Proc
-            // Incl a process wildcard
-            | ProcVar
-            // It can also be a process with the more general version of variables
-            | "for" "(" NamePats "<-" NamePat ")" "{" ProcPat "}" [binder]
-            // Persistent listen
-            | "for" "(" NamePats "<=" NamePat ")" "{" ProcPat "}" [binder]
-            // Contract **needs to be given an alias which binds**
-            | "contract" NamePat "(" NamePats ")" "=" "{" ProcPat "}"
-            // Send
-            | NamePat "!" "(" ProcPats ")"
-            // Persistent send
-            | NamePat "!!" "(" ProcPats ")"
-            // Evaluate
-            | "*" NamePat
-            // Match
-            | "match" ProcPat "{" MatchCasesPat "}"
-            // If ... then ...
-            | "if" "(" Bool ")" ProcPat [strict(1)]
-            // If ... then ... else ...
-            | "if" "(" Bool ")" ProcPat "else" ProcPat [strict(1)]
-            // New
-            | "new" ProcIds "in" "{" ProcPat "}" [binder]
-            // Parallel
-            | ProcPat "|" ProcPat [left]
-            // Bracket
-            | "{" ProcPat "}" [bracket]
             // Can also include logical connectives
             // logical negation
             | "~" ProcPat
@@ -216,23 +187,14 @@ syntax ProcPat ::=
             // logical "or"
             > ProcPat "\\/" ProcPat [left]
 
-
-// ---
 // Name Patterns
-// ---
-
 syntax NamePat ::=
-            // Either a variable (incl. wildcards)
-              NameVar
             // Or it could just be a name
             | Name
             // It can also be a quoted process pattern
             | "@" ProcPat
 
-// ---
 // Both Name and Process Patterns
-// ---
-
 syntax Pat ::=
             // A name pattern
               NamePat
@@ -252,17 +214,6 @@ syntax ProcPats ::= List{ ProcPat, "," }
 
 syntax KVariable ::= Id
 syntax KResult   ::= Bool | Int
-
-// -------------
-//    Some syntax for the "match" process
-// -------------
-
-
-// The same but for patterns
-syntax MatchCasePat  ::= ProcPat "=>" "{" ProcPat "}" [binder]
-            | MatchCase
-syntax MatchCasesPat ::= List{MatchCasePat, " "}
-            | MatchCases
 
 
 endmodule
