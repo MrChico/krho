@@ -41,9 +41,6 @@ syntax Proc ::=
               // Bracket
               | "{" Proc "}" [bracket]
 
-// KResult for processes with "strict" arguments
-syntax KResult ::= Bool
-
 // Process variables
 syntax ProcVar ::=
                 ProcWildcard
@@ -104,9 +101,6 @@ syntax AExp ::=
               > Int "++" Int [strict]
               // Minus minus
               | Int "--" Int [strict]
-
-// KResult for "strict" arguments
-syntax KResult ::= Int
 
 // Booleans
 syntax Bool ::=
