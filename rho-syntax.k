@@ -21,7 +21,7 @@ syntax Proc ::=
               // Listen
               | "for" "(" Receipt ")" "{" Proc "}" [binder]
               // Contract **needs to be given an alias which binds**
-              | "contract" Name "(" Receipt ")" "=" "{" Proc "}"
+              | "contract" Name "(" NamePats ")" "=" "{" Proc "}"
               // Send
               | Name "!" Send
               // Persistent send
@@ -41,15 +41,25 @@ syntax Proc ::=
               // Bracket
               | "{" Proc "}" [bracket]
 
+// Variables
+syntax Wildcard    ::= "_"
+syntax Var         ::= Wildcard | Id
+syntax Vars        ::= List{Var, ","}
+                     | Ids
+syntax Ids         ::= List{ Id, ","}
+
 // Process variables
 syntax ProcVar ::=
                 ProcWildcard
               | ProcId
 
-syntax ProcWildcard ::= "_"
+syntax ProcWildcard ::= Wildcard
 syntax ProcId   ::= Id
 syntax ProcIds  ::= List{ ProcId, "," }
+              | Ids
 syntax ProcVars ::= List{ ProcVar, ","}
+              | ProcIds
+              | Vars
 
 // Ground processes
 syntax Ground ::=
@@ -130,7 +140,7 @@ syntax LinearBind  ::=
 syntax ReceiptRepeated ::=
                 RepeatedBinds
 
-syntax RepeatedBinds ::= List{LinearBind, ";"}
+syntax RepeatedBinds ::= List{RepeatedBind, ";"}
 syntax RepeatedBind  ::=
                 NamePats "<=" Name
 
@@ -150,20 +160,25 @@ syntax Name ::=
 // Name variables
 syntax NameVar ::=
                 NameWildcard
-              | NameId
+              | Id
 
-syntax NameWildcard ::= "_"
+syntax NameWildcard ::= Wildcard
 syntax NameId   ::= Id
 syntax NameIds  ::= List{ NameId, "," }
+              | NameId
+              | Ids
 syntax NameVars ::= List{ NameVar, ","}
+              | NameIds
+              | Vars
 
 // -------------
 //    Both Names and Processes
 // -------------
 
 syntax Names ::= List{ Name, "," }
+            | NameVars
 syntax Procs ::= List{ Proc, "," }
-
+            | ProcVars
 
 // -------------
 //    Patterns
@@ -173,6 +188,10 @@ syntax Procs ::= List{ Proc, "," }
 syntax ProcPat ::=
             // A process pattern can be a standard process
               Proc
+            // Parallel
+            | ProcPat "|" ProcPat [left]
+            // Bracket
+            | "{" ProcPat "}" [bracket]
             // Can also include logical connectives
             // logical negation
             | "~" ProcPat
@@ -184,7 +203,7 @@ syntax ProcPat ::=
 // Name Patterns
 syntax NamePat ::=
             // Or it could just be a name
-            | Name
+              Name
             // It can also be a quoted process pattern
             | "@" ProcPat
 
@@ -197,10 +216,8 @@ syntax Pat ::=
 
 syntax NamePats ::= List{ NamePat, "," }
             | Names
-            | NameVars
 syntax ProcPats ::= List{ ProcPat, "," }
             | Procs
-            | ProcVars
 
 // -------------
 //    For K
