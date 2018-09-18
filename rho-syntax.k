@@ -2,69 +2,254 @@ require "substitution.k"
 
 module RHO-SYNTAX
 imports SUBSTITUTION
-imports DOMAINS
+imports DOMAINS-SYNTAX
 
+// -------------
+//   Processes
+// -------------
 
-
-// Processes are concrete or variables
-syntax Proc ::= ProcConcrete
-              | Id
-
-// Concrete processes are built up from the following constructors:
-syntax ProcConcrete ::=
-              // Ground terms, including the empty process and expressions
+// Processes
+syntax Proc ::=
+              // Ground terms
                 Ground
+              // Expressions
+              | Exp
+              // Process variables
+              | ProcVar
+              // The empty process
+              | "Nil"
               // Listen
-              | "for" "(" Names "<-" Name ")" "{" ProcConcrete "}" [binder(1 -> 3)]
-              // Persistent listen
-              | "for" "(" Names "<=" Name ")" "{" ProcConcrete "}" [binder(1 -> 3)]
-              | "contract" Name "(" Names ")" "=" "{" ProcConcrete "}"
+              | "for" "(" Receipt ")" "{" Proc "}" [binder]
+              // Contract **needs to be given an alias which binds**
+              | "contract" Name "(" NamePats ")" "=" "{" Proc "}"
               // Send
-              | Name "!" "(" Procs ")"
+              | Name "!" Send
               // Persistent send
-              | Name "!!" "(" Procs ")"
+              | Name "!!" Send
               // Evaluate
               | "*" Name
-              // New
-              | "new" Names "in" "{" ProcConcrete "}" [binder]
               // Match
-//              | "match" ProcOrName "{" MatchCases "}"
+              | "match" Proc "{" MatchCases "}"
+              // If ... then ...
+              | "if" "(" Bool ")" Proc [strict(1)]
+              // If ... then ... else ...
+              | "if" "(" Bool ")" Proc "else" Proc [strict(1)]
+              // New
+              | "new" ProcIds "in" "{" Proc "}" [binder]
               // Parallel
-              | ProcConcrete "|" ProcConcrete [left]
+              | Proc "|" Proc [left]
               // Bracket
-              | "{" ProcConcrete "}" [bracket]
+              | "{" Proc "}" [bracket]
 
-// Grouping "Nil" and Exp is useful, as they behave the same on the top-level
-// but we should note here that they are NOT structurally equivalent, nor are
-// they semantically equivalent in a general sense.
-syntax Ground ::= "Nil"
-              | Exp
+// Variables
+syntax Wildcard ::= "_"
+syntax Var      ::= Wildcard | Id
+syntax Vars     ::=
+                Var
+              | Var "," Vars
+              | Ids
+syntax Ids      ::=
+                Id
+              | Id "," Ids
 
-syntax Exp  ::= Int
+// Process variables
+syntax ProcVar ::=
+                ProcWildcard
+              | ProcId
+
+syntax ProcWildcard ::= Wildcard
+syntax ProcId   ::= Id
+syntax ProcIds  ::=
+                ProcId
+              | ProcId "," ProcIds
+              | Ids
+syntax ProcVars ::=
+                ProcVar
+              | ProcVar "," ProcVars
+              | ProcIds
+              | Vars
+
+// Ground processes
+syntax Ground ::=
+                Int
               | Bool
               | String
+              // | Uri
+              | Collection
+              // The unforgeable processes used in the "new" process
+              | "unforgeable(" Int ")"
+
+// Collections
+syntax Collection ::=
+                RhoList
+              | RhoSet
+              | RhoTuple
+              | RhoMap
+
+syntax RhoList  ::= "[" Procs "]"
+syntax RhoSet   ::= "Set" "(" Procs ")"
+syntax RhoTuple ::=
+              // Single tuple
+                "(" Proc ",)"
+              // Multiple tuple
+              | "(" Proc "," Proc ")"
+              | "(" Proc "," Proc "," Procs ")"
+
+syntax RhoMap   ::= "{" RhoKeyValuePairs "}"
+
+syntax RhoKeyValuePairs ::= List{ RhoKeyValuePair, ","}
+syntax RhoKeyValuePair  ::= Proc ":" Proc
+
+// Expressions are anything that necessarily resolves to a single ground value
+syntax Exp  ::=
+                Ground
+              // Arithmetic expressions
+              | AExp
+
+
+// Arithmetic expressions
+syntax AExp ::=
+                Int "*"  Int [strict]
+              | Int "/"  Int [strict]
+              // Remainders
+              > Int "%%" Int [strict]
+              | Int "+"  Int [strict]
+              | Int "-"  Int [strict]
+              // Plus plus
+              > Int "++" Int [strict]
+              // Minus minus
+              | Int "--" Int [strict]
+
+// Booleans
+syntax Bool ::=
+                Proc "matches" Proc
+              | Proc "==" Proc
+              | Proc "!=" Proc
+
+// Send
+syntax Send  ::=
+                "(" Proc ")"
+              | RhoTuple
+
+// Receipt
+syntax Receipt ::=
+                ReceiptLinear
+              | ReceiptRepeated
+
+// Linear receipts
+syntax ReceiptLinear ::=
+                LinearBinds
+
+syntax LinearBinds ::=
+                LinearBind
+              | LinearBind ";" LinearBinds
+syntax LinearBind  ::=
+                NamePats "<-" Name
+
+// Repeated receipts
+syntax ReceiptRepeated ::=
+                RepeatedBinds
+
+syntax RepeatedBinds ::=
+                RepeatedBind
+              | RepeatedBind ";" RepeatedBinds
+syntax RepeatedBind  ::=
+                NamePats "<=" Name
+
+// MatchCase
+syntax MatchCase  ::= ProcPat "=>" "{" Proc "}" [binder]
+syntax MatchCases ::=
+                MatchCase
+              | MatchCase MatchCases
+
+// -------------
+//     Names
+// -------------
+
+// Names
+syntax Name ::=
+                "@" Proc
+              | NameVar
+
+// Name variables
+syntax NameVar ::=
+                NameWildcard
+              | Id
+
+syntax NameWildcard ::= Wildcard
+syntax NameId   ::= Id
+syntax NameIds  ::=
+                NameId
+              | NameId "," NameIds
+              | Ids
+syntax NameVars ::=
+                NameVar
+              | NameVar "," NameVars
+              | NameIds
+              | Vars
+
+// -------------
+//    Both Names and Processes
+// -------------
+
+syntax Names ::=
+                Name
+              | Name "," Names
+              | NameVars
+syntax Procs ::=
+                Proc
+              | Proc "," Procs
+              | ProcVars
+
+// -------------
+//    Patterns
+// -------------
+
+// Process Patterns
+syntax ProcPat ::=
+            // A process pattern can be a standard process
+              Proc
+            // Parallel
+            | ProcPat "|" ProcPat [left]
+            // Bracket
+            | "{" ProcPat "}" [bracket]
+            // Can also include logical connectives
+            // logical negation
+            | "~" ProcPat
+            // logical "and"
+            > ProcPat "/\\" ProcPat [left]
+            // logical "or"
+            > ProcPat "\\/" ProcPat [left]
+
+// Name Patterns
+syntax NamePat ::=
+            // Or it could just be a name
+              Name
+            // It can also be a quoted process pattern
+            | "@" ProcPat
+
+// Both Name and Process Patterns
+syntax Pat ::=
+            // A name pattern
+              NamePat
+            // A process pattern
+            | ProcPat
+
+syntax NamePats ::=
+                NamePat
+              | NamePat "," NamePats
+              | Names
+syntax ProcPats ::=
+                ProcPat
+              | ProcPat "," ProcPats
+              | Procs
+
+// -------------
+//    For K
+// -------------
 
 syntax KVariable ::= Id
+syntax KResult   ::= Bool | Int
 
-// The general idea of a name can be a (bound) variable. It can also
-// contain logical connectives. We need to distinguish between non-variable
-// terms, with no logical connectives, etc and those that are or have them.
-syntax Name ::= "@" Proc
-              | Id
-              // logical "and"
-              | Name "/\\" Name [left]
-              // logical "or"
-              > Name "\\/" Name [left]
 
-// Naïve non-empty list contructions for names and processes
-syntax Names ::= Name |
-                 Name "," Names [right]
-syntax Procs ::= Proc |
-                 Proc "," Procs [right]
-
-syntax KResult ::= Int
-              | String //StringlessMatchFormSyntax
-              | Bool
-              | Id
-              | ProcConcrete
 endmodule
