@@ -10,36 +10,46 @@ imports DOMAINS-SYNTAX
 
 // Processes
 syntax Proc ::=
+              // Bracket
+                "{" Proc "}" [bracket]
               // Ground terms
-                Ground
-              // Expressions
-              | Exp
+              | Ground
+              // Collection
+              | Collection
               // Process variables
               | ProcVar
               // The empty process
               | "Nil"
+              // Variable reference
+              > VarRef
+              // Evaluate
+              > "*" Name
+              // Method
+              > Proc "." Method "(" Procs ")"
+              // Arithmetic expressions
+              > AExp
+              // Boolean expressions
+              > Bool
+              // Send
+              > Name Send
+              // Contract **needs to be given an alias which binds**
+              > "contract" Name "(" NamePats ")" "=" "{" Proc "}"
               // Listen
               | "for" "(" Receipt ")" "{" Proc "}" [binder]
-              // Contract **needs to be given an alias which binds**
-              | "contract" Name "(" NamePats ")" "=" "{" Proc "}"
-              // Send
-              | Name "!" Send
-              // Persistent send
-              | Name "!!" Send
-              // Evaluate
-              | "*" Name
+              // Select
+              | "select" "{" Branches "}"
               // Match
               | "match" Proc "{" MatchCases "}"
+              // Bundle
+              | Bundle "{" Proc "}"
               // If ... then ...
-              | "if" "(" Bool ")" Proc [strict(1)]
+              > "if" "(" Bool ")" Proc [strict(1)]
               // If ... then ... else ...
               | "if" "(" Bool ")" Proc "else" Proc [strict(1)]
               // New
-              | "new" ProcIds "in" "{" Proc "}" [binder]
+              | "new" NameDeclarations "in" "{" Proc "}" [binder]
               // Parallel
-              | Proc "|" Proc [left]
-              // Bracket
-              | "{" Proc "}" [bracket]
+              > Proc "|" Proc [left]
 
 // Variables
 syntax Wildcard ::= "_"
@@ -48,9 +58,15 @@ syntax Vars     ::=
                 Var
               | Var "," Vars
               | Ids
+
 syntax Ids      ::=
                 Id
               | Id "," Ids
+
+// Makes it so we _don't_ shadow the variable referenced
+syntax VarRef ::=
+                "="     ProcId
+              | "=" "*" NameId
 
 // Process variables
 syntax ProcVar ::=
@@ -63,6 +79,7 @@ syntax ProcIds  ::=
                 ProcId
               | ProcId "," ProcIds
               | Ids
+
 syntax ProcVars ::=
                 ProcVar
               | ProcVar "," ProcVars
@@ -71,19 +88,18 @@ syntax ProcVars ::=
 
 // Ground processes
 syntax Ground ::=
-                Int
-              | Bool
+                Bool
+              | Int
               | String
-              // | Uri
-              | Collection
+              | Uri
               // The unforgeable processes used in the "new" process
               | "unforgeable(" Int ")"
 
 // Collections
 syntax Collection ::=
                 RhoList
-              | RhoSet
               | RhoTuple
+              | RhoSet
               | RhoMap
 
 syntax RhoList  ::= "[" Procs "]"
@@ -92,42 +108,70 @@ syntax RhoTuple ::=
               // Single tuple
                 "(" Proc ",)"
               // Multiple tuple
-              | "(" Proc "," Proc ")"
-              | "(" Proc "," Proc "," Procs ")"
+              | "(" Proc "," Procs ")"
 
 syntax RhoMap   ::= "{" RhoKeyValuePairs "}"
 
-syntax RhoKeyValuePairs ::= List{ RhoKeyValuePair, ","}
+syntax RhoKeyValuePairs ::=
+                RhoKeyValuePair
+              | RhoKeyValuePair "," RhoKeyValuePairs
+
 syntax RhoKeyValuePair  ::= Proc ":" Proc
 
-// Expressions are anything that necessarily resolves to a single ground value
+// Expressions are anything that necessarily resolves to a single ground value or a collection
 syntax Exp  ::=
                 Ground
+              // Collection
+              | Collection
               // Arithmetic expressions
               | AExp
 
 
 // Arithmetic expressions
 syntax AExp ::=
-                Int "*"  Int [strict]
+              // Parens
+                "(" AExp ")" [bracket]
+              > Int "*"  Int [strict]
               | Int "/"  Int [strict]
               // Remainders
-              > Int "%%" Int [strict]
-              | Int "+"  Int [strict]
+              | Int "%%" Int [strict]
+              > Int "+"  Int [strict]
               | Int "-"  Int [strict]
               // Plus plus
-              > Int "++" Int [strict]
+              | Int "++" Int [strict]
               // Minus minus
               | Int "--" Int [strict]
 
 // Booleans
 syntax Bool ::=
-                Proc "matches" Proc
+              // Parens
+                "(" Bool ")" [bracket]
+              > Int "<"  Int
+              | Int "<=" Int
+              | Int ">"  Int
+              | Int ">=" Int
+              // Referencing processes
+              > Proc "matches" Proc
               | Proc "==" Proc
               | Proc "!=" Proc
+              | "not" Bool
+              > Bool "and" Bool
+              > Bool "or"  Bool
 
 // Send
 syntax Send  ::=
+                SendSingle
+              | SendMultiple
+
+syntax SendSingle   ::=
+              // Single send
+                "!"  SendContent
+
+syntax SendMultiple ::=
+              // Persistent Send
+                "!!" SendContent
+
+syntax SendContent  ::=
                 "(" Proc ")"
               | RhoTuple
 
@@ -162,6 +206,44 @@ syntax MatchCases ::=
                 MatchCase
               | MatchCase MatchCases
 
+// Branch
+syntax Branch   ::= ReceiptLinear "=>" Proc
+syntax Branches ::=
+                Branch
+              | Branch Branches
+
+// Bundle
+syntax Bundle ::=
+              // Bundle write
+                "bundle+"
+              // Bundle read
+              | "bundle-"
+              // Bundle equiv
+              | "bundle0"
+              // Bundle read write
+              | "bundle"
+
+// Methods
+syntax Method ::=
+              // The list of current methods (add as more methods are defined)
+                "method(nth)"
+              | "method(toByteArray)"
+              | "method(hexToBytes)"
+              | "method(union)"
+              | "method(diff)"
+              | "method(add)"
+              | "method(delete)"
+              | "method(contains)"
+              | "method(get)"
+              | "method(getOrElse)"
+              | "method(set)"
+              | "method(keys)"
+              | "method(size)"
+              | "method(length)"
+              | "method(slice)"
+              // (Not yet in the interpreter)
+              | "method(confine)"
+
 // -------------
 //     Names
 // -------------
@@ -188,6 +270,18 @@ syntax NameVars ::=
               | NameIds
               | Vars
 
+// Name Declarations
+syntax NameDeclaration  ::=
+                NameVar
+              | NameVar "(" Uri ")"
+
+syntax NameDeclarations ::=
+                NameDeclaration
+              | NameDeclaration "," NameDeclarations
+              | NameVars
+
+syntax Uri ::= "uri(" String ")"
+
 // -------------
 //    Both Names and Processes
 // -------------
@@ -207,33 +301,46 @@ syntax Procs ::=
 
 // Process Patterns
 syntax ProcPat ::=
-            // A process pattern can be a standard process
-              Proc
-            // Parallel
-            | ProcPat "|" ProcPat [left]
-            // Bracket
-            | "{" ProcPat "}" [bracket]
-            // Can also include logical connectives
-            // logical negation
-            | "~" ProcPat
-            // logical "and"
-            > ProcPat "/\\" ProcPat [left]
-            // logical "or"
-            > ProcPat "\\/" ProcPat [left]
+              // A process pattern can be a standard process
+                Proc
+              // Collection pat
+              | CollectionPat
+              // Parallel
+              | ProcPat "|" ProcPat [left]
+              // Bracket
+              | "{" ProcPat "}" [bracket]
+              // logical negation
+              > "~" ProcPat
+              // logical "and"
+              > ProcPat "/\\" ProcPat [left]
+              // logical "or"
+              > ProcPat "\\/" ProcPat [left]
+
+syntax CollectionPat ::=
+                RhoListPat
+              | RhoSetPat
+
+syntax RhoListPat ::=
+                RhoList
+              | "[" Procs "..." ProcVar "]"
+
+syntax RhoSetPat ::=
+                RhoSet
+              | "Set" "(" Procs "..." ProcVar ")"
 
 // Name Patterns
 syntax NamePat ::=
-            // Or it could just be a name
-              Name
-            // It can also be a quoted process pattern
-            | "@" ProcPat
+              // Or it could just be a name
+                Name
+              // It can also be a quoted process pattern
+              | "@" ProcPat
 
 // Both Name and Process Patterns
 syntax Pat ::=
-            // A name pattern
-              NamePat
-            // A process pattern
-            | ProcPat
+              // A name pattern
+                NamePat
+              // A process pattern
+              | ProcPat
 
 syntax NamePats ::=
                 NamePat
