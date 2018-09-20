@@ -52,8 +52,8 @@ syntax Proc ::=
               > Proc "|" Proc [left]
 
 // Variables
-syntax Wildcard ::= "_"
-syntax Var      ::= Wildcard | Id
+//syntax Wildcard ::= "_"
+syntax Var      ::=  Id
 syntax Vars     ::=
                 Var
               | Var "," Vars
@@ -70,10 +70,10 @@ syntax VarRef ::=
 
 // Process variables
 syntax ProcVar ::=
-                ProcWildcard
-              | ProcId
+//                ProcWildcard
+              ProcId
 
-syntax ProcWildcard ::= Wildcard
+//syntax ProcWildcard ::= Wildcard
 syntax ProcId   ::= Id
 syntax ProcIds  ::=
                 ProcId
@@ -255,10 +255,10 @@ syntax Name ::=
 
 // Name variables
 syntax NameVar ::=
-                NameWildcard
-              | Id
+//                NameWildcard
+              Id
 
-syntax NameWildcard ::= Wildcard
+//syntax NameWildcard ::= Wildcard
 syntax NameId   ::= Id
 syntax NameIds  ::=
                 NameId
