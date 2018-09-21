@@ -20,6 +20,8 @@ syntax Proc ::=
               | ProcVar
               // The empty process
               | "Nil"
+              // SimpleType
+              | SimpleType
               // Variable reference
               > VarRef
               // Evaluate
@@ -51,39 +53,20 @@ syntax Proc ::=
               // Parallel
               > Proc "|" Proc [left]
 
-// Variables
-//syntax Wildcard ::= "_"
-syntax Var      ::=  Id
-syntax Vars     ::=
-                Var
-              | Var "," Vars
-              | Ids
-
-syntax Ids      ::=
-                Id
-              | Id "," Ids
-
 // Makes it so we _don't_ shadow the variable referenced
 syntax VarRef ::=
-                "="     ProcId
-              | "=" "*" NameId
+                "="     ProcVar
+              | "=" "*" NameVar
+
+// General variables
+syntax Var    ::= Id
+syntax Vars   ::= Var | Var "," Vars
 
 // Process variables
-syntax ProcVar ::=
-//                ProcWildcard
-              ProcId
-
-//syntax ProcWildcard ::= Wildcard
-syntax ProcId   ::= Id
-syntax ProcIds  ::=
-                ProcId
-              | ProcId "," ProcIds
-              | Ids
-
-syntax ProcVars ::=
+syntax ProcVar   ::= Var
+syntax ProcVars  ::=
                 ProcVar
               | ProcVar "," ProcVars
-              | ProcIds
               | Vars
 
 // Ground processes
@@ -254,20 +237,10 @@ syntax Name ::=
               | NameVar
 
 // Name variables
-syntax NameVar ::=
-//                NameWildcard
-              Id
-
-//syntax NameWildcard ::= Wildcard
-syntax NameId   ::= Id
-syntax NameIds  ::=
-                NameId
-              | NameId "," NameIds
-              | Ids
-syntax NameVars ::=
+syntax NameVar   ::= Var
+syntax NameVars  ::=
                 NameVar
               | NameVar "," NameVars
-              | NameIds
               | Vars
 
 // Name Declarations
@@ -355,8 +328,13 @@ syntax ProcPats ::=
 //    For K
 // -------------
 
-syntax KVariable ::= Id
-syntax KResult   ::= Bool | Int
+syntax KVariable  ::= Id | ProcVar | NameVar
+syntax KResult    ::= Bool | Int
 
+syntax SimpleType ::=
+                "Bool"
+              | "Int"
+              | "Uri"
+              | "ByteArray"
 
 endmodule
