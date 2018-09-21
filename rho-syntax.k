@@ -274,20 +274,21 @@ syntax Procs ::=
 
 // Process Patterns
 syntax ProcPat ::=
-              // A process pattern can be a standard process
-                Proc
+              // Bracket
+                "{" ProcPat "}" [bracket]
               // Collection pat
               | CollectionPat
-              // Parallel
-              | ProcPat "|" ProcPat [left]
-              // Bracket
-              | "{" ProcPat "}" [bracket]
               // logical negation
               > "~" ProcPat
               // logical "and"
               > ProcPat "/\\" ProcPat [left]
               // logical "or"
               > ProcPat "\\/" ProcPat [left]
+              // A process pattern can be a standard process
+              > Proc
+              // Parallel
+              > ProcPat "|" ProcPat [left]
+
 
 syntax CollectionPat ::=
                 RhoListPat
