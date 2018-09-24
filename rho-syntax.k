@@ -20,8 +20,6 @@ syntax Proc ::=
               | ProcVar
               // The empty process
               | "Nil"
-              // SimpleType
-              | SimpleType
               // Variable reference
               > VarRef
               // Evaluate
@@ -278,6 +276,8 @@ syntax ProcPat ::=
                 "{" ProcPat "}" [bracket]
               // Collection pat
               | CollectionPat
+              // SimpleType
+              | SimpleType
               // logical negation
               > "~" ProcPat
               // logical "and"
