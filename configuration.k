@@ -10,14 +10,14 @@ configuration <T color="yellow">
                 </thread>
                 // The tuple space
                 <In multiplicity="*">
-                  <chan>  .K  </chan>
-                  <guard> .K  </guard>
+                  <chan>  .K  </chan>  // list of names
+                  <guard> .K  </guard> // list of patterns
                   <body>  .K  </body>
                   // Bool to determine whether or not is persistent
                   <persistent> .K </persistent>
                 </In>
                 <Out multiplicity="*">
-                  <chan>  .K  </chan>
+                  <chan>  .K  </chan>  // list of names 
                   <msg>   .K  </msg>
                   // Bool to determine whether or not is persistent
                   <persistent> .K </persistent>
