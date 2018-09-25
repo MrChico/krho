@@ -94,10 +94,8 @@ syntax RhoTuple ::=
 syntax RhoMap   ::= "{" RhoKeyValuePairs "}"
 
 syntax RhoKeyValuePairs ::=
-                RhoKeyValuePair
-              | RhoKeyValuePair "," RhoKeyValuePairs
-
-syntax RhoKeyValuePair  ::= Proc ":" Proc
+                Proc ":" Proc
+              | Proc ":" Proc "," RhoKeyValuePairs
 
 // Expressions are anything that necessarily resolves to a single ground value or a collection
 syntax Exp  ::=
@@ -163,17 +161,13 @@ syntax Receipt ::=
 
 // Linear receipts
 syntax LinearBinds ::=
-                LinearBind
-              | LinearBind ";" LinearBinds
-syntax LinearBind  ::=
                 NamePats "<-" Name
+              | NamePats "<-" Name ";" LinearBinds
 
 // Repeated receipts
 syntax RepeatedBinds ::=
-                RepeatedBind
-              | RepeatedBind ";" RepeatedBinds
-syntax RepeatedBind  ::=
                 NamePats "<=" Name
+              | NamePats "<=" Name ";" RepeatedBinds
 
 // MatchCase
 syntax MatchCase  ::= ProcPat "=>" "{" Proc "}" [binder]
@@ -182,10 +176,10 @@ syntax MatchCases ::=
               | MatchCase MatchCases
 
 // Branch
-syntax Branch   ::= LinearBinds "=>" Proc
 syntax Branches ::=
-                Branch
-              | Branch Branches
+              // Branch
+                LinearBinds "=>" Proc
+              | LinearBinds "=>" Proc Branches
 
 // Bundle
 syntax Bundle ::=
