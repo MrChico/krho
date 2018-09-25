@@ -4,20 +4,23 @@ imports RHO-SYNTAX
 
 // Configuration
 configuration <T color="yellow">
-                // Any non send/receive computations go here
-                <Thread multiplicity="*">
+                // Concurrent threads for processes to run
+                <thread multiplicity="*">
                   <k color="red"> $PGM:Proc </k>
-                </Thread>
+                </thread>
                 // The tuple space
                 <In multiplicity="*">
-                  // computations of auxiliary functions
-                  // happen in the auxiliary cells
-                  // Auxiliary functions may nest, so
-                  // we give a nonzero multiplicity
-                  <Aux multiplicity="*"> .K </Aux>
+                  <chan>  .K  </chan>
+                  <guard> .K  </guard>
+                  <body>  .K  </body>
+                  // Bool to determine whether or not is persistent
+                  <persistent> .K </persistent>
                 </In>
                 <Out multiplicity="*">
-                  <Aux multiplicity="*"> .K </Aux>
+                  <chan>  .K  </chan>
+                  <msg>   .K  </msg>
+                  // Bool to determine whether or not is persistent
+                  <persistent> .K </persistent>
                 </Out>
               </T>
 
