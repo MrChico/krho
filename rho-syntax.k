@@ -329,6 +329,7 @@ syntax KResult    ::= Bool | Int
 syntax SimpleType ::=
                 "Bool"
               | "Int"
+              | "String"
               | "Uri"
               | "ByteArray"
 
