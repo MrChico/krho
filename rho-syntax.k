@@ -158,13 +158,10 @@ syntax SendContent  ::=
 
 // Receipt
 syntax Receipt ::=
-                ReceiptLinear
-              | ReceiptRepeated
+                LinearBinds
+              | RepeatedBinds
 
 // Linear receipts
-syntax ReceiptLinear ::=
-                LinearBinds
-
 syntax LinearBinds ::=
                 LinearBind
               | LinearBind ";" LinearBinds
@@ -172,9 +169,6 @@ syntax LinearBind  ::=
                 NamePats "<-" Name
 
 // Repeated receipts
-syntax ReceiptRepeated ::=
-                RepeatedBinds
-
 syntax RepeatedBinds ::=
                 RepeatedBind
               | RepeatedBind ";" RepeatedBinds
@@ -188,7 +182,7 @@ syntax MatchCases ::=
               | MatchCase MatchCases
 
 // Branch
-syntax Branch   ::= ReceiptLinear "=>" Proc
+syntax Branch   ::= LinearBinds "=>" Proc
 syntax Branches ::=
                 Branch
               | Branch Branches
