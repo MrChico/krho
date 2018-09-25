@@ -324,6 +324,9 @@ syntax SimpleType ::=
                 "Bool"
               | "Int"
               | "String"
+              | "List"
+              | "Tuple"
+              | "Map"
               | "Uri"
               | "ByteArray"
 
