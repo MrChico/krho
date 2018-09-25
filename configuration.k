@@ -10,17 +10,17 @@ configuration <T color="yellow">
                 </thread>
                 // The tuple space
                 <In multiplicity="*">
-                  <chan>  .K  </chan>  // list of names
-                  <guard> .K  </guard> // list of patterns
-                  <body>  .K  </body>
+                  <inbound>  .K  </inbound>  // list of names
+                  <guard>    .K  </guard> // list of patterns
+                  <body>     .K  </body>
                   // Bool to determine whether or not is persistent
-                  <persistent> .K </persistent>
+                  <linear>   .K  </linear>
                 </In>
                 <Out multiplicity="*">
-                  <chan>  .K  </chan>  // list of names 
-                  <msg>   .K  </msg>
+                  <outbound> .K  </outbound>  // list of names
+                  <msg>      .K  </msg>
                   // Bool to determine whether or not is persistent
-                  <persistent> .K </persistent>
+                  <single>   .K  </single>
                 </Out>
               </T>
 
