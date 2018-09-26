@@ -160,9 +160,14 @@ syntax Receipt ::=
               | RepeatedBinds
 
 // Linear receipts
-syntax LinearBinds ::=
+syntax LinearBind  ::=
                 NamePats "<-" Name
-              | NamePats "<-" Name ";" LinearBinds
+              // Peeking
+              | NamePats "<!" Name
+
+syntax LinearBinds ::=
+                LinearBind
+              | LinearBind ";" LinearBinds
 
 // Repeated receipts
 syntax RepeatedBinds ::=
