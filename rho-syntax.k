@@ -51,39 +51,20 @@ syntax Proc ::=
               // Parallel
               > Proc "|" Proc [left]
 
-// Variables
-//syntax Wildcard ::= "_"
-syntax Var      ::=  Id
-syntax Vars     ::=
-                Var
-              | Var "," Vars
-              | Ids
-
-syntax Ids      ::=
-                Id
-              | Id "," Ids
-
 // Makes it so we _don't_ shadow the variable referenced
 syntax VarRef ::=
-                "="     ProcId
-              | "=" "*" NameId
+                "="     ProcVar
+              | "=" "*" NameVar
+
+// General variables
+syntax Var    ::= Id
+syntax Vars   ::= Var | Var "," Vars
 
 // Process variables
-syntax ProcVar ::=
-//                ProcWildcard
-              ProcId
-
-//syntax ProcWildcard ::= Wildcard
-syntax ProcId   ::= Id
-syntax ProcIds  ::=
-                ProcId
-              | ProcId "," ProcIds
-              | Ids
-
-syntax ProcVars ::=
+syntax ProcVar   ::= Var
+syntax ProcVars  ::=
                 ProcVar
               | ProcVar "," ProcVars
-              | ProcIds
               | Vars
 
 // Ground processes
@@ -113,10 +94,8 @@ syntax RhoTuple ::=
 syntax RhoMap   ::= "{" RhoKeyValuePairs "}"
 
 syntax RhoKeyValuePairs ::=
-                RhoKeyValuePair
-              | RhoKeyValuePair "," RhoKeyValuePairs
-
-syntax RhoKeyValuePair  ::= Proc ":" Proc
+                Proc ":" Proc
+              | Proc ":" Proc "," RhoKeyValuePairs
 
 // Expressions are anything that necessarily resolves to a single ground value or a collection
 syntax Exp  ::=
@@ -177,28 +156,23 @@ syntax SendContent  ::=
 
 // Receipt
 syntax Receipt ::=
-                ReceiptLinear
-              | ReceiptRepeated
+                LinearBinds
+              | RepeatedBinds
 
 // Linear receipts
-syntax ReceiptLinear ::=
-                LinearBinds
+syntax LinearBind  ::=
+                NamePats "<-" Name
+              // Peeking
+              | NamePats "<!" Name
 
 syntax LinearBinds ::=
                 LinearBind
               | LinearBind ";" LinearBinds
-syntax LinearBind  ::=
-                NamePats "<-" Name
 
 // Repeated receipts
-syntax ReceiptRepeated ::=
-                RepeatedBinds
-
 syntax RepeatedBinds ::=
-                RepeatedBind
-              | RepeatedBind ";" RepeatedBinds
-syntax RepeatedBind  ::=
                 NamePats "<=" Name
+              | NamePats "<=" Name ";" RepeatedBinds
 
 // MatchCase
 syntax MatchCase  ::= ProcPat "=>" "{" Proc "}" [binder]
@@ -207,10 +181,10 @@ syntax MatchCases ::=
               | MatchCase MatchCases
 
 // Branch
-syntax Branch   ::= ReceiptLinear "=>" Proc
 syntax Branches ::=
-                Branch
-              | Branch Branches
+              // Branch
+                LinearBinds "=>" Proc
+              | LinearBinds "=>" Proc Branches
 
 // Bundle
 syntax Bundle ::=
@@ -254,20 +228,10 @@ syntax Name ::=
               | NameVar
 
 // Name variables
-syntax NameVar ::=
-//                NameWildcard
-              Id
-
-//syntax NameWildcard ::= Wildcard
-syntax NameId   ::= Id
-syntax NameIds  ::=
-                NameId
-              | NameId "," NameIds
-              | Ids
-syntax NameVars ::=
+syntax NameVar   ::= Var
+syntax NameVars  ::=
                 NameVar
               | NameVar "," NameVars
-              | NameIds
               | Vars
 
 // Name Declarations
@@ -301,20 +265,23 @@ syntax Procs ::=
 
 // Process Patterns
 syntax ProcPat ::=
-              // A process pattern can be a standard process
-                Proc
+              // Bracket
+                "{" ProcPat "}" [bracket]
               // Collection pat
               | CollectionPat
-              // Parallel
-              | ProcPat "|" ProcPat [left]
-              // Bracket
-              | "{" ProcPat "}" [bracket]
+              // SimpleType
+              | SimpleType
               // logical negation
               > "~" ProcPat
               // logical "and"
               > ProcPat "/\\" ProcPat [left]
               // logical "or"
               > ProcPat "\\/" ProcPat [left]
+              // A process pattern can be a standard process
+              > Proc
+              // Parallel
+              > ProcPat "|" ProcPat [left]
+
 
 syntax CollectionPat ::=
                 RhoListPat
@@ -355,8 +322,17 @@ syntax ProcPats ::=
 //    For K
 // -------------
 
-syntax KVariable ::= Id
-syntax KResult   ::= Bool | Int
+syntax KVariable  ::= Id | ProcVar | NameVar
+syntax KResult    ::= Bool | Int
 
+syntax SimpleType ::=
+                "Bool"
+              | "Int"
+              | "String"
+              | "List"
+              | "Tuple"
+              | "Map"
+              | "Uri"
+              | "ByteArray"
 
 endmodule
