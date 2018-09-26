@@ -10,14 +10,14 @@ configuration <T color="yellow">
                 </thread>
                 // The tuple space
                 <In multiplicity="*">
-                  <inbound>  .K  </inbound>  // list of names
+                  <mailfrom> .K  </mailfrom> // list of names
                   <guard>    .K  </guard> // list of patterns
                   <body>     .K  </body>
                   // Bool to determine whether or not is persistent
                   <linear>   .K  </linear>
                 </In>
                 <Out multiplicity="*">
-                  <outbound> .K  </outbound>  // list of names
+                  <mailto>   .K  </mailto>  // list of names
                   <msg>      .K  </msg>
                   // Bool to determine whether or not is persistent
                   <single>   .K  </single>
