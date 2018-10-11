@@ -53,8 +53,8 @@ syntax Proc ::=
 
 // Makes it so we _don't_ shadow the variable referenced
 syntax VarRef ::=
-                "="     NameVar
-              | "=" "*" ProcVar
+                "="     ProcVar
+              | "=" "*" NameVar
 
 // General variables
 syntax Var    ::= Id
