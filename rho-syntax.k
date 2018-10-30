@@ -36,8 +36,6 @@ syntax Proc ::=
               > "contract" Name "(" NamePats ")" "=" "{" Proc "}"
               // Listen
               | "for" "(" Receipt ")" "{" Proc "}" [binder]
-              // Select
-              | "select" "{" Branches "}"
               // Match
               | "match" Proc "{" MatchCases "}"
               // Bundle
@@ -182,12 +180,6 @@ syntax MatchCase  ::= ProcPat "=>" Proc [binder]
 syntax MatchCases ::=
                 MatchCase
               | MatchCase MatchCases
-
-// Branch
-syntax Branches ::=
-              // Branch
-                LinearBinds "=>" Proc
-              | LinearBinds "=>" Proc Branches
 
 // Bundle
 syntax Bundle ::=
