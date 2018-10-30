@@ -292,11 +292,11 @@ syntax CollectionPat ::=
 
 syntax RhoListPat ::=
                 RhoList
-              | "[" ProcPats "..." ProcVar "]"
+              | "[" ProcPats "," "..." ProcVar "]"
 
 syntax RhoSetPat ::=
                 RhoSet
-              | "Set" "(" ProcPats "..." ProcVar ")"
+              | "Set" "(" ProcPats "," "..." ProcVar ")"
 
 // Name Patterns
 syntax NamePat ::=
