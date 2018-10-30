@@ -1,6 +1,6 @@
 module PATTERN-MATCH
 imports TYPE
-
+/*
 // Matching Function
 syntax Match ::=
               // Matching processes
@@ -25,5 +25,5 @@ rule match P:Proc { P1:ProcPat => { P2:Proc } }
 
 // Temporary
 rule #patternMatch P:Proc #via P1:ProcPat #in P2:Proc => "success"
-
+*/
 endmodule
