@@ -1,5 +1,7 @@
 module TYPE
 imports RHO-SYNTAX
+// The structural type system, based on ASTs.
+
 
 // Syntax for the type system.
 syntax Type ::=
@@ -13,174 +15,192 @@ syntax Type ::=
               | TerminalType
 
 // Recursive syntax for the type rewrites
-syntax InitialType      ::= "type[" Pat "]" | "type[" Leaf "]"
+syntax InitialType      ::= "type[" Pat              "]"
+                          | "type[" Leaf             "]"
+                          | "type[" RepeatedBinds    "]"
+                          | "type[" LinearBinds      "]"
+                          | "type[" NamePats         "]"
+                          | "type[" NameDeclarations "]"
+                          | "type[" MatchCases       "]"
+
 syntax IntermediateType ::=
-                            "type[" String ";;" InitialType      ";;" InitialType      "]" [strict(2,3)]
-                          | "type[" String ";;" IntermediateType ";;" IntermediateType "]" [strict(3)]
+                            "type[" String ";;" IntermediateType ";;" IntermediateType "]" [strict(2,3)]
                           | TerminalType
+                          | InitialType
 
 syntax TerminalType     ::=
                             "type[" String ";;" Leaf             ";;" Leaf             "]"
                           | "type[" String ";;" TerminalType     ";;" TerminalType     "]"
 
-syntax Leaf             ::= Ground | Var | NameVar | ProcVar
+
+syntax Leaf             ::= Ground | Var | NameVar | ProcVar | "#truncate"
+syntax String           ::= "toString(" Pat ")" | "toString(" Method ")"
 
 // Syntax for strictness
 syntax KResult ::= TerminalType
+
+
+// Type( ) is strict, and rewrites as the type.
+rule #type( T:Type ) => T [strict]
+rule TYPE( P:Proc ) => #type( type[P] )
+rule TYPE( N:Name ) => #type( type[N] )
 
 // Rewrite rules to generate types
 
 // *** Process types ***
 // Ground terms
-rule type[ I:Int                ] => [ "int"         ;; I ]
-rule type[ S:String             ] => [ "string"      ;; S ]
-rule type[ U:Uri                ] => [ "uri"         ;; U ]
-rule type[ unforgeable( I:Int ) ] => [ "unforgeable" ;; I ]
+rule type[ I:Int                ] => type[ "leaf" ;; "int"         ;; I ]
+rule type[ S:String             ] => type[ "leaf" ;; "string"      ;; S ]
+rule type[ uri( S:String )      ] => type[ "leaf" ;; "uri"         ;; S ]
+rule type[ unforgeable( I:Int ) ] => type[ "leaf" ;; "unforgeable" ;; I ]
 
 // Boolean expressions
-rule type[ true                    ] => type[ "bool"         ;; true     ]
-rule type[ false                   ] => type[ "bool"         ;; false    ]
-rule type[ not B:Bool              ] => type[ "boolnot"      ;; type[B]  ]
-rule type[ I1:Int  <       I2:Int  ] => type[ "bool<"        ;; I1 ;; I2 ]
-rule type[ I1:Int  >       I2:Int  ] => type[ "bool>"        ;; I1 ;; I2 ]
-rule type[ I1:Int  <=      I2:Int  ] => type[ "bool<="       ;; I1 ;; I2 ]
-rule type[ I1:Int  >=      I2:Int  ] => type[ "bool>="       ;; I1 ;; I2 ]
-rule type[ P1:Proc matches P2:Proc ] => type[ "boolmatches"  ;; P1 ;; P2 ]
-rule type[ P1:Proc ==      P2:Proc ] => type[ "bool=="       ;; P1 ;; P2 ]
-rule type[ P1:Proc !=      P2:Proc ] => type[ "bool!="       ;; P1 ;; P2 ]
-rule type[ B1:Bool and     B2:Bool ] => type[ "booland"      ;; type[B1] ;; type[B2] ]
-rule type[ B1:Bool or      B2:Bool ] => type[ "boolor"       ;; type[B1] ;; type[B2] ]
+rule type[ true                    ] => type[ "leaf"         ;; "bool"    ;; true            ]
+rule type[ false                   ] => type[ "leaf"         ;; "bool"    ;; false           ]
+rule type[ not B:Bool              ] => type[ "boolnot"      ;; type[B]   ;; type[#truncate] ]
+rule type[ I1:Int  <       I2:Int  ] => type[ "bool<"        ;; type[I1]  ;; type[I2]        ]
+rule type[ I1:Int  >       I2:Int  ] => type[ "bool>"        ;; type[I1]  ;; type[I2]        ]
+rule type[ I1:Int  <=      I2:Int  ] => type[ "bool<="       ;; type[I1]  ;; type[I2]        ]
+rule type[ I1:Int  >=      I2:Int  ] => type[ "bool>="       ;; type[I1]  ;; type[I2]        ]
+rule type[ P1:Proc matches P2:Proc ] => type[ "boolmatches"  ;; type[P1]  ;; type[P2]        ]
+rule type[ P1:Proc ==      P2:Proc ] => type[ "bool=="       ;; type[P1]  ;; type[P2]        ]
+rule type[ P1:Proc !=      P2:Proc ] => type[ "bool!="       ;; type[P1]  ;; type[P2]        ]
+rule type[ B1:Bool and     B2:Bool ] => type[ "booland"      ;; type[B1]  ;; type[B2]        ]
+rule type[ B1:Bool or      B2:Bool ] => type[ "boolor"       ;; type[B1]  ;; type[B2]        ]
 
 // Collection
 //   RhoList
-rule type[ [ Hd:Proc Tl:Procs ] ] => [ "list" ;; type[ Hd ] ;; type[ [Tl] ] ]
-rule type[ [ Sng:Proc         ] ] => [ "list" ;; type[Sng]                  ]
+rule type[ [ Hd:Proc , Tl:Procs ] ] => type[ "list" ;; type[ Hd ] ;; type[ [Tl] ]    ]
+rule type[ [ Sng:Proc           ] ] => type[ "list" ;; type[Sng]  ;; type[#truncate] ]
 
 //   RhoTuple
-rule type[ ( Hd:Proc Md:Proc Tl:Procs ) ] => [ "tuple" ;; type[Hd] ;; type[ (Md,Tl) ] ]
-rule type[ ( Hd:Proc Tl:Proc          ) ] => [ "tuple" ;; type[Hd] ;; type[ ( Tl ,) ] ]
-rule type[ ( Sng:Proc                ,) ] => [ "tuple" ;; type[Sng]                   ]
+rule type[ ( Hd:Proc , Md:Proc , Tl:Procs ) ] => type[ "tuple" ;; type[Hd]  ;; type[ (Md,Tl) ] ]
+rule type[ ( Hd:Proc , Tl:Proc            ) ] => type[ "tuple" ;; type[Hd]  ;; type[ ( Tl ,) ] ]
+rule type[ ( Sng:Proc                    ,) ] => type[ "tuple" ;; type[Sng] ;; type[#truncate] ]
 
 //   RhoSet
-rule type[ Set( Hd:Proc Tl:Procs ) ] => [ "set" ;; type[Hd] ;; type[ Set(Tl) ] ]
-rule type[ Set( Sng:Proc )         ] => [ "set" ;; type[Sng]                   ]
+rule type[ Set( Hd:Proc , Tl:Procs ) ] => type[ "set" ;; type[Hd]  ;; type[ Set(Tl) ] ]
+rule type[ Set( Sng:Proc   )         ] => type[ "set" ;; type[Sng] ;; type[#truncate] ]
 
 //   RhoMap
-rule type[{ Hd:RhoKeyValuePair , Tl:RhoKeyValuePairs }] => [ "map" ;; type[ {Hd} ] ;; type[{Tl}] ]
-rule type[{ Key:Proc : Val:Proc                      }] => [ "map" ;; type[Key]    ;; type[Val]  ]
+rule type[{Hd:RhoKeyValuePair , Tl:RhoKeyValuePairs}] => type[ "map" ;; type[{Hd}] ;; type[{Tl}] ]
+rule type[{Key:Proc : Val:Proc                     }] => type[ "map" ;; type[Key]  ;; type[Val]  ]
 
 // Process variables
-rule type[ PV:ProcVar ] => type[ "procvar" ;; PV ]
+rule type[ PV:ProcVar ] => type[ "leaf" ;; "procvar" ;; PV ]
 
 // The empty process
-rule type[ Nil ] => type[ "nil" ;; Nil ]
+rule type[ Nil ] => type[ "leaf" ;; "nil" ;; "Nil" ]
 
 // Variable reference
-rule type[ =  PV:ProcVar ] => type[ "varref" ;; type[PV] ]
-rule type[ =* NV:NameVar ] => type[ "varref" ;; type[NV] ]
+rule type[ =  PV:ProcVar ] => type[ "varref" ;; type[PV] ;; type[#truncate] ]
+rule type[ =* NV:NameVar ] => type[ "varref" ;; type[NV] ;; type[#truncate] ]
 
 // Evaluate
-rule type[ * N:Name ] => type[ "eval" ;; type[Name] ]
+rule type[ * N:Name ] => type[ "eval" ;; type[N] ;; type[#truncate] ]
 
 // Method
-rule type[ P:Proc . M:Method ( PS:Procs ) ] => [ toString(M) ;; P ;; PS ]
+rule type[ P:Proc . M:Method ( Hd:Proc , Tl:Procs ) ]
+                     => type[ "method" ;; type[Hd] ;; type[P:Proc . M:Method ( Tl:Procs )] ]
+
+rule type[ P:Proc . M:Method ( Hd:Proc ) ] => type[ toString( M ) ;; type[P] ;; type[Hd] ]
 
 // Arithmetic expressions
-rule type[ I1:Int *  I2:Int ] => type[ "mult"       ;; I1 ;; I2 ]
-rule type[ I1:Int /  I2:Int ] => type[ "div"        ;; I1 ;; I2 ]
-rule type[ I1:Int %% I2:Int ] => type[ "mod"        ;; I1 ;; I2 ]
-rule type[ I1:Int +  I2:Int ] => type[ "plus"       ;; I1 ;; I2 ]
-rule type[ I1:Int -  I2:Int ] => type[ "minus"      ;; I1 ;; I2 ]
-rule type[ I1:Int ++ I2:Int ] => type[ "plusplus"   ;; I1 ;; I2 ]
-rule type[ I1:Int -- I2:Int ] => type[ "minusminus" ;; I1 ;; I2 ]
+rule type[ I1:Int *  I2:Int ] => type[ "mult"       ;; type[I1] ;; type[I2] ]
+rule type[ I1:Int /  I2:Int ] => type[ "div"        ;; type[I1] ;; type[I2] ]
+rule type[ I1:Int %% I2:Int ] => type[ "mod"        ;; type[I1] ;; type[I2] ]
+rule type[ I1:Int +  I2:Int ] => type[ "plus"       ;; type[I1] ;; type[I2] ]
+rule type[ I1:Int -  I2:Int ] => type[ "minus"      ;; type[I1] ;; type[I2] ]
+rule type[ I1:Int ++ I2:Int ] => type[ "plusplus"   ;; type[I1] ;; type[I2] ]
+rule type[ I1:Int -- I2:Int ] => type[ "minusminus" ;; type[I1] ;; type[I2] ]
 
 
 // Send
-rule type[ Chan:Name!  Msg:Send ] => type[ "send"  ;; type[Chan] ;; type[Msg] ]
-rule type[ Chan:Name!! Msg:Send ] => type[ "psend" ;; type[Chan] ;; type[Msg] ]
+rule type[ Chan:Name!  (Msg:Proc)   ] => type[ "send"  ;; type[Chan] ;; type[Msg] ]
+rule type[ Chan:Name!  Msg:RhoTuple ] => type[ "send"  ;; type[Chan] ;; type[Msg] ]
+rule type[ Chan:Name!! (Msg:Proc)   ] => type[ "psend" ;; type[Chan] ;; type[Msg] ]
+rule type[ Chan:Name!! Msg:RhoTuple ] => type[ "psend" ;; type[Chan] ;; type[Msg] ]
 
 // Contract **needs to be given an alias which binds**
 rule type[ contract Chan:Name ( Patns:NamePats ) = { Body:Proc } ] =>
-             type[ "contract" ;; type[ "bind" ;; type[ Patns ] ;; type[ Body ] ] ;; type[ Chan ] ]
+           type[ "contract" ;; type[ Patns <= Chan ] ;; type[ Body ] ]
 // Listen
 rule type[ for( LB:LinearBinds   ){ Body:Proc } ] => type[ "listen"  ;; type[ LB ] ;; type[ Body ] ]
 rule type[ for( RB:RepeatedBinds ){ Body:Proc } ] => type[ "plisten" ;; type[ RB ] ;; type[ Body ] ]
 
 rule type[ Hd:LinearBind ; Tl:LinearBinds ] => type[ "linearbinds" ;; type[Hd]    ;; type[Tl]   ]
-rule type[ Patns:NamePats <- Chan:Name  ]   => type[ "listen"      ;; type[Patns] ;; type[Name] ]
-rule type[ Patns:NamePats <! Chan:Name  ]   => type[ "peek"        ;; type[Patns] ;; type[Name] ]
+rule type[ Patns:NamePats <- Chan:Name    ] => type[ "listen"      ;; type[Patns] ;; type[Chan] ]
+rule type[ Patns:NamePats <! Chan:Name    ] => type[ "peek"        ;; type[Patns] ;; type[Chan] ]
 
-rule type[ Patns:NamePats <= Chan:Name ; RBs:RepeatedBinds ]
-                  => type[ "repeatedbinds" ;; type[Patns <= Chan] ;; type[Rbs] ]
+rule type[ RB:RepeatedBind ; RBs:RepeatedBinds ]
+                  => type[ "repeatedbinds" ;; type[RB] ;; type[RBs] ]
 rule type[ Patns:NamePats <= Chan:Name ] => type[ "plisten" ;; type[Patns] ;; type[Chan] ]
 
 // Name Patterns
 rule type[ Hd:NamePat , Tl:NamePats ] => type[ "namepats" ;; type[Hd] ;; type[Tl] ]
 
 // Match
-rule type[ match P:Proc { MC:MatchCases } ] => type[ "match" ;; type[P] ;; type[MC] ]
+rule type[ match P:Proc { MC:MatchCases } ] => type[ "match"      ;; type[P]    ;; type[MC]   ]
 
-rule type[ Hd:MatchCase Tl:MatchCases    ] => type[ "matchcases" ;; type[Hd]   ;; type[Tl]   ]
-rule type[ Patn:ProcPat => { Body:Proc } ] => type[ "matchcase"  ;; type[Patn] ;; type[Body] ]
+rule type[ Hd:MatchCase Tl:MatchCases    ]  => type[ "matchcases" ;; type[Hd]   ;; type[Tl]   ]
+//rule type[ Patn:ProcPat => { Body:Proc } ]  => type[ "matchcase"  ;; type[Patn] ;; type[Body] ]
 
 // Bundle
-rule type[ bundle+ { P:Proc } ] => type[ "bundle+" ;; type[P] ]
-rule type[ bundle- { P:Proc } ] => type[ "bundle-" ;; type[P] ]
-rule type[ bundle0 { P:Proc } ] => type[ "bundle0" ;; type[P] ]
-rule type[ bundle  { P:Proc } ] => type[ "bundle"  ;; type[P] ]
+rule type[ bundle+ { P:Proc } ] => type[ "bundle+" ;; type[P] ;; type[#truncate] ]
+rule type[ bundle- { P:Proc } ] => type[ "bundle-" ;; type[P] ;; type[#truncate] ]
+rule type[ bundle0 { P:Proc } ] => type[ "bundle0" ;; type[P] ;; type[#truncate] ]
+rule type[ bundle  { P:Proc } ] => type[ "bundle"  ;; type[P] ;; type[#truncate] ]
 
 // If ... then ...
 rule type[ if ( B:Bool ) P:Proc ] => type[ "if" ;; type[B] ;; type[P] ]
 
 // If ... then ... else ...
 rule type[ if ( B:Bool ) PTrue:Proc else PFalse:Proc ]
-              => type[ "ifelse" ;; type[B] ;; type["ifelseprocs" ;; type[PTrue] ;; type[PFalse] ] ]
+              => type[ "ifelse" ;; type[B] ;; type[ "ifelseprocs" ;; type[PTrue] ;; type[PFalse] ] ]
 
 // New
 rule type[ new N:NameDeclarations in { Body:Proc} ] => type[ "new" ;; type[N] ;; type[Body] ]
 
-rule type[ Hd:NameDeclaration Tl:NameDeclarations ]
-                              => type[ "namedeclarations" ;; type[Hd] ;; type[Tl] ]
-rule type[ NV:NameVar ( U:Uri ) ] => type[ "urinamedeclaration" ;; type[NV] ;; type[U] ]
+rule type[ Hd:NameDeclaration, Tl:NameDeclarations ]
+                                  => type[ "namedeclarations"   ;; type[Hd] ;; type[Tl] ]
+rule type[ NV:NameVar ( U:Uri ) ] => type[ "urinamedeclaration" ;; type[NV] ;; type[U]  ]
 
 // Parallel
 rule type[ P1:ProcPat | P2:ProcPat ] => type[ "par" ;; type[P1] ;; type[P2] ]
 
 // *** Name types ***
-rule type[ @P:Proc    ] => type[ "quote"   ;; type[P] ]
-rule type[ NV:NameVar ] => type[ "namevar" ;; NV      ]
+rule type[ @P:Proc    ] => type[ "quote" ;; type[P]   ;; type[#truncate] ]
+rule type[ NV:NameVar ] => type[ "leaf"  ;; "namevar" ;; NV              ]
 
 // *** Pattern types ***
 // Collection pat
-//   RhoListPat
-rule type[ [Hd:Procs    ... Tl:ProcVar] ] => type[ "rholistpat" ;; type[Hd] ;; type[Tl] ]
-//   RhoSetPat
-rule type[ Set(Hd:Procs ... Tl:ProcVar) ] => type[ "rhosetpat"  ;; type[Hd] ;; type[Tl] ]
+//   RhoListPat Multiple
+rule type[ [Hd1:Proc, Hd:Procs    ... Tl:ProcVar] ]
+                    => type[ "rholistpathead" ;; type[Hd1] ;; type[[Hd:Procs    ... Tl:ProcVar]] ]
+//   RhoListPat Single
+rule type[ [Hd:Proc    ... Tl:ProcVar] ] => type[ "rholistpat" ;; type[Hd] ;; type[Tl] ]
+
+//   RhoSetPat Multiple
+rule type[ Set(Hd1:Proc, Hd:Procs ... Tl:ProcVar) ]
+                    => type[ "rhosetpathead"  ;; type[Hd1] ;; type[Set(Hd:Procs ... Tl:ProcVar)] ]
+//   RhoSetPat Single
+rule type[ Set(Hd:Proc ... Tl:ProcVar) ] => type[ "rhosetpat"  ;; type[Hd] ;; type[Tl] ]
 
 // SimpleType
-rule type[ ST:SimpleType ] => type[ "simpletype" ;; toString(ST) ]
+rule type[ ST:SimpleType ]  => type[ "simpletype"    ;; type[toString(ST)] ;; type[#truncate] ]
 
 // logical negation
-rule type[ ~ PPat:ProcPat ] => type[ "logicalnegate" ;; type[PPat] ]
+rule type[ ~ PPat:ProcPat ] => type[ "logicalnegate" ;; type[PPat]         ;; type[#truncate] ]
 
 // logical "and"
-rule type[ PPat1:ProcPat /\ PPat2:ProcPat ] => type[ "logicaland" ;; PPat1 ;; PPat2]
+rule type[ PPat1:ProcPat /\ PPat2:ProcPat ] => type[ "logicaland" ;; type[PPat1] ;; type[PPat2] ]
 
 // logical "or"
-rule type[ PPat1:ProcPat \/ PPat2:ProcPat ] => type[ "logicalor"  ;; PPat1 ;; PPat2]
+rule type[ PPat1:ProcPat \/ PPat2:ProcPat ] => type[ "logicalor"  ;; type[PPat1] ;; type[PPat2] ]
 
+// *** Misc ***
 
-
-// Type( ) is strict, and rewrites as the type.
-rule #type( T:TerminalType ) => T [strict]
-
-
-
-
-// Type inclusion predicate
-// The function #isIn is the inclusion predicate
-syntax Bool ::= Type "#isIn" Type [function]
-
-
+// #truncate
+rule type[ #truncate ] => type[ "leaf" ;; "truncate" ;; #truncate ]
 
 endmodule
