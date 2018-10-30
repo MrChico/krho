@@ -171,8 +171,11 @@ syntax LinearBinds ::=
 
 // Repeated receipts
 syntax RepeatedBinds ::=
+                RepeatedBind
+              | RepeatedBind ";" RepeatedBinds
+
+syntax RepeatedBind  ::=
                 NamePats "<=" Name
-              | NamePats "<=" Name ";" RepeatedBinds
 
 // MatchCase
 syntax MatchCase  ::= ProcPat "=>" "{" Proc "}" [binder]
@@ -289,11 +292,11 @@ syntax CollectionPat ::=
 
 syntax RhoListPat ::=
                 RhoList
-              | "[" Procs "..." ProcVar "]"
+              | "[" ProcPats "..." ProcVar "]"
 
 syntax RhoSetPat ::=
                 RhoSet
-              | "Set" "(" Procs "..." ProcVar ")"
+              | "Set" "(" ProcPats "..." ProcVar ")"
 
 // Name Patterns
 syntax NamePat ::=
@@ -303,7 +306,7 @@ syntax NamePat ::=
               | "@" ProcPat
 
 // Both Name and Process Patterns
-syntax Pat ::=
+syntax Pat  ::=
               // A name pattern
                 NamePat
               // A process pattern
@@ -313,6 +316,7 @@ syntax NamePats ::=
                 NamePat
               | NamePat "," NamePats
               | Names
+
 syntax ProcPats ::=
                 ProcPat
               | ProcPat "," ProcPats
