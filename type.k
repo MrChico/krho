@@ -42,8 +42,6 @@ syntax KResult ::= TerminalType
 
 // Type( ) is strict, and rewrites as the type.
 rule #type( T:Type ) => T [strict]
-rule TYPE( P:Proc ) => #type( type[P] )
-rule TYPE( N:Name ) => #type( type[N] )
 
 // Rewrite rules to generate types
 
