@@ -104,6 +104,7 @@ rule type[ P:Proc . M:Method ( Hd:Proc , Tl:Procs ) ]
                      => type[ "method" ;; type[Hd] ;; type[P:Proc . M:Method ( Tl:Procs )] ]
 
 rule type[ P:Proc . M:Method ( Hd:Proc ) ] => type[ toString( M ) ;; type[P] ;; type[Hd] ]
+rule type[ P:Proc . M:Method () ] => type[ toString( M ) ;; type[P] ;; type[#truncate] ]
 
 // Arithmetic expressions
 rule type[ I1:Int *  I2:Int ] => type[ "mult"       ;; type[I1] ;; type[I2] ]
@@ -143,7 +144,7 @@ rule type[ Hd:NamePat , Tl:NamePats ] => type[ "namepats" ;; type[Hd] ;; type[Tl
 rule type[ match P:Proc { MC:MatchCases } ] => type[ "match"      ;; type[P]    ;; type[MC]   ]
 
 rule type[ Hd:MatchCase Tl:MatchCases    ]  => type[ "matchcases" ;; type[Hd]   ;; type[Tl]   ]
-//rule type[ Patn:ProcPat => { Body:Proc } ]  => type[ "matchcase"  ;; type[Patn] ;; type[Body] ]
+rule type[ (Patn => { Body }):MatchCase  ]  => type[ "matchcase"  ;; type[Patn] ;; type[Body] ]
 
 // Bundle
 rule type[ bundle+ { P:Proc } ] => type[ "bundle+" ;; type[P] ;; type[#truncate] ]
@@ -175,16 +176,16 @@ rule type[ NV:NameVar ] => type[ "leaf"  ;; "namevar" ;; NV              ]
 // *** Pattern types ***
 // Collection pat
 //   RhoListPat Multiple
-rule type[ [Hd1:Proc, Hd:Procs    ... Tl:ProcVar] ]
-                    => type[ "rholistpathead" ;; type[Hd1] ;; type[[Hd:Procs    ... Tl:ProcVar]] ]
+rule type[ [Hd1:ProcPat, Hd:ProcPats,   ... Tl:ProcVar] ]
+                    => type[ "rholistpathead" ;; type[Hd1] ;; type[[Hd,    ... Tl]] ]
 //   RhoListPat Single
-rule type[ [Hd:Proc    ... Tl:ProcVar] ] => type[ "rholistpat" ;; type[Hd] ;; type[Tl] ]
+rule type[ [Hd:ProcPat,    ... Tl:ProcVar] ] => type[ "rholistpat" ;; type[Hd] ;; type[Tl] ]
 
 //   RhoSetPat Multiple
-rule type[ Set(Hd1:Proc, Hd:Procs ... Tl:ProcVar) ]
-                    => type[ "rhosetpathead"  ;; type[Hd1] ;; type[Set(Hd:Procs ... Tl:ProcVar)] ]
+rule type[ Set(Hd1:ProcPat, Hd:ProcPats, ... Tl:ProcVar) ]
+                    => type[ "rhosetpathead"  ;; type[Hd1] ;; type[Set(Hd, ... Tl)] ]
 //   RhoSetPat Single
-rule type[ Set(Hd:Proc ... Tl:ProcVar) ] => type[ "rhosetpat"  ;; type[Hd] ;; type[Tl] ]
+rule type[ Set(Hd:ProcPat, ... Tl:ProcVar) ] => type[ "rhosetpat"  ;; type[Hd] ;; type[Tl] ]
 
 // SimpleType
 rule type[ ST:SimpleType ]  => type[ "simpletype"    ;; type[toString(ST)] ;; type[#truncate] ]
