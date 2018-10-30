@@ -312,7 +312,7 @@ syntax NamePat ::=
               | "@" ProcPat
 
 // Both Name and Process Patterns
-syntax Pat  ::=
+syntax Pat ::=
               // A name pattern
                 NamePat
               // A process pattern
