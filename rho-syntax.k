@@ -178,7 +178,7 @@ syntax RepeatedBind  ::=
                 NamePats "<=" Name
 
 // MatchCase
-syntax MatchCase  ::= ProcPat "=>" "{" Proc "}" [binder]
+syntax MatchCase  ::= ProcPat "=>" Proc [binder]
 syntax MatchCases ::=
                 MatchCase
               | MatchCase MatchCases
