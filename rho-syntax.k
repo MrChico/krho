@@ -25,7 +25,7 @@ syntax Proc ::=
               // Evaluate
               > "*" Name
               // Method
-              > Proc "." Method "(" Procs ")"
+              > Proc "." Method "(" MethodArgs ")"
               // Arithmetic expressions
               > AExp
               // Boolean expressions
@@ -201,6 +201,12 @@ syntax Bundle ::=
               | "bundle"
 
 // Methods
+syntax MethodArgs ::=
+              // There is either a list of processes for args
+                Procs
+              // Or there is nothing
+              | ""
+
 syntax Method ::=
               // The list of current methods (add as more methods are defined)
                 "method(nth)"
